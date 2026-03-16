@@ -87,3 +87,26 @@ X = df.drop(["RUL", "engine_id", "cycle", "cycle_max"], axis=1)
 
 print("Feature shape:", X.shape)
 print("Target shape:", y.shape)
+
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error
+
+# split dataset
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# create model
+model = RandomForestRegressor(n_estimators=100, random_state=42)
+
+# train model
+model.fit(X_train, y_train)
+
+# predictions
+predictions = model.predict(X_test)
+
+# evaluate
+mae = mean_absolute_error(y_test, predictions)
+
+print("Mean Absolute Error:", mae)
