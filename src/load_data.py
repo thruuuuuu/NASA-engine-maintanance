@@ -67,7 +67,7 @@ print(correlation)
 
 # remove columns with no variation
 df = df.loc[:, df.nunique() > 1]
-
+'''
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -77,4 +77,13 @@ sns.heatmap(df.corr(), cmap="coolwarm")
 
 plt.title("Sensor Correlation Heatmap")
 
-plt.show()
+plt.show()'''
+
+# target variable
+y = df["RUL"]
+
+# remove non-feature columns
+X = df.drop(["RUL", "engine_id", "cycle", "cycle_max"], axis=1)
+
+print("Feature shape:", X.shape)
+print("Target shape:", y.shape)
