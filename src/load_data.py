@@ -44,3 +44,17 @@ df["RUL"] = df["cycle_max"] - df["cycle"]
 
 # Preview
 print(df[["engine_id","cycle","cycle_max","RUL"]].head(10))
+
+import matplotlib.pyplot as plt
+
+# select one engine
+engine1 = df[df["engine_id"] == 1]
+
+# plot sensor trend
+plt.plot(engine1["cycle"], engine1["sensor12"])
+
+plt.xlabel("Cycle")
+plt.ylabel("Sensor 12 Value")
+plt.title("Engine 1 Degradation Trend")
+
+plt.show()
