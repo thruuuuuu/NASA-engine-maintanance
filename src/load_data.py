@@ -32,3 +32,15 @@ engine_life = df.groupby("engine_id")["cycle"].max()
 
 print("\nEngine Life Statistics")
 print(engine_life.describe())
+
+# Compute max cycle per engine
+max_cycle = df.groupby("engine_id")["cycle"].max()
+
+# Merge back to dataframe
+df = df.merge(max_cycle, on="engine_id", suffixes=("", "_max"))
+
+# Calculate Remaining Useful Life
+df["RUL"] = df["cycle_max"] - df["cycle"]
+
+# Preview
+print(df[["engine_id","cycle","cycle_max","RUL"]].head(10))
