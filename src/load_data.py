@@ -47,7 +47,7 @@ print(df[["engine_id","cycle","cycle_max","RUL"]].head(10))
 
 import matplotlib.pyplot as plt
 
-# select one engine
+'''select one engine
 engine1 = df[df["engine_id"] == 1]
 
 # plot sensor trend
@@ -57,7 +57,7 @@ plt.xlabel("Cycle")
 plt.ylabel("Sensor 12 Value")
 plt.title("Engine 1 Degradation Trend")
 
-plt.show()
+plt.show()'''
 
 # correlation with RUL
 correlation = df.corr()["RUL"].sort_values()
@@ -67,3 +67,14 @@ print(correlation)
 
 # remove columns with no variation
 df = df.loc[:, df.nunique() > 1]
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(12,8))
+
+sns.heatmap(df.corr(), cmap="coolwarm")
+
+plt.title("Sensor Correlation Heatmap")
+
+plt.show()
