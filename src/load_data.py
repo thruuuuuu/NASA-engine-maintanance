@@ -64,3 +64,6 @@ correlation = df.corr()["RUL"].sort_values()
 
 print("\nSensor Correlation with RUL:\n")
 print(correlation)
+
+# remove columns with no variation
+df = df.loc[:, df.nunique() > 1]
