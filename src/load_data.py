@@ -58,3 +58,9 @@ plt.ylabel("Sensor 12 Value")
 plt.title("Engine 1 Degradation Trend")
 
 plt.show()
+
+# correlation with RUL
+correlation = df.corr()["RUL"].sort_values()
+
+print("\nSensor Correlation with RUL:\n")
+print(correlation)
