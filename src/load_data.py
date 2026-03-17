@@ -110,3 +110,15 @@ predictions = model.predict(X_test)
 mae = mean_absolute_error(y_test, predictions)
 
 print("Mean Absolute Error:", mae)
+
+# feature importance
+import pandas as pd
+
+importance = model.feature_importances_
+
+feature_importance_df = pd.DataFrame({
+    "Feature": X.columns,
+    "Importance": importance
+}).sort_values(by="Importance", ascending=False)
+
+print(feature_importance_df)
