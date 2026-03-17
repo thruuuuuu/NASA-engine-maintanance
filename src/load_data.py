@@ -122,7 +122,7 @@ feature_importance_df = pd.DataFrame({
 }).sort_values(by="Importance", ascending=False)
 
 print(feature_importance_df)
-
+'''
 #display of important characters chart
 import matplotlib.pyplot as plt
 
@@ -133,4 +133,34 @@ feature_importance_df.head(10).plot(
 )
 
 plt.title("Top 10 Important Sensors")
-plt.show()
+plt.show()'''
+
+#Normalizing features
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+
+X_scaled = scaler.fit_transform(X)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X_scaled, y, test_size=0.2, random_state=42
+)
+
+#XGBoost model
+from xgboost import XGBRegressor
+
+model = XGBRegressor(
+    n_estimators=300,
+    learning_rate=0.05,
+    max_depth=5,
+    random_state=42
+)
+
+model.fit(X_train, y_train)
+
+predictions = model.predict(X_test)
+
+from sklearn.metrics import mean_absolute_error
+mae = mean_absolute_error(y_test, predictions)
+
+print("Improved MAE:", mae)
