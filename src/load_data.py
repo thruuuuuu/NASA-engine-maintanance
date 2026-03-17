@@ -122,3 +122,15 @@ feature_importance_df = pd.DataFrame({
 }).sort_values(by="Importance", ascending=False)
 
 print(feature_importance_df)
+
+#display of important characters chart
+import matplotlib.pyplot as plt
+
+feature_importance_df.head(10).plot(
+    x="Feature",
+    y="Importance",
+    kind="bar"
+)
+
+plt.title("Top 10 Important Sensors")
+plt.show()
