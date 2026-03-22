@@ -1,166 +1,106 @@
 import pandas as pd
+import numpy as np
 
-# Column names for dataset
+# -------------------------------
+# 1. LOAD DATA
+# -------------------------------
 columns = ["engine_id", "cycle",
            "op1", "op2", "op3"] + \
           [f"sensor{i}" for i in range(1, 22)]
 
-# Load dataset
-df = pd.read_csv(
-    "../data/train_FD001.txt",
-    sep="\s+",
-    header=None
-)
-
+df = pd.read_csv("../data/train_FD001.txt", sep="\s+", header=None)
 df.columns = columns
 
-# Show first rows
-print(df.head())
-
-# Basic info
-print("\nDataset Info:\n")
-print(df.info())
-
-# Shape
-print("\nDataset Shape:", df.shape)
-
-# Number of unique engines
-print("Total Engines:", df["engine_id"].nunique())
-
-# Max cycle per engine
-engine_life = df.groupby("engine_id")["cycle"].max()
-
-print("\nEngine Life Statistics")
-print(engine_life.describe())
-
-# Compute max cycle per engine
+# -------------------------------
+# 2. CREATE RUL
+# -------------------------------
 max_cycle = df.groupby("engine_id")["cycle"].max()
-
-# Merge back to dataframe
 df = df.merge(max_cycle, on="engine_id", suffixes=("", "_max"))
 
-# Calculate Remaining Useful Life
 df["RUL"] = df["cycle_max"] - df["cycle"]
 
-# Preview
-print(df[["engine_id","cycle","cycle_max","RUL"]].head(10))
+# 🔥 IMPORTANT: cap RUL (improves model a lot)
+df["RUL"] = df["RUL"].clip(upper=130)
 
-import matplotlib.pyplot as plt
-
-'''select one engine
-engine1 = df[df["engine_id"] == 1]
-
-# plot sensor trend
-plt.plot(engine1["cycle"], engine1["sensor12"])
-
-plt.xlabel("Cycle")
-plt.ylabel("Sensor 12 Value")
-plt.title("Engine 1 Degradation Trend")
-
-plt.show()'''
-
-# correlation with RUL
-correlation = df.corr()["RUL"].sort_values()
-
-print("\nSensor Correlation with RUL:\n")
-print(correlation)
-
-# remove columns with no variation
+# -------------------------------
+# 3. REMOVE USELESS COLUMNS
+# -------------------------------
+# remove constant columns
 df = df.loc[:, df.nunique() > 1]
-'''
-import seaborn as sns
-import matplotlib.pyplot as plt
 
-plt.figure(figsize=(12,8))
-
-sns.heatmap(df.corr(), cmap="coolwarm")
-
-plt.title("Sensor Correlation Heatmap")
-
-plt.show()'''
-
-# target variable
-y = df["RUL"]
-
-# remove non-feature columns
-X = df.drop(["RUL", "engine_id", "cycle", "cycle_max"], axis=1)
-
-print("Feature shape:", X.shape)
-print("Target shape:", y.shape)
-
+# -------------------------------
+# 4. ENGINE-LEVEL SPLIT (CRITICAL)
+# -------------------------------
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error
 
-# split dataset
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
+engine_ids = df["engine_id"].unique()
+
+train_engines, test_engines = train_test_split(
+    engine_ids, test_size=0.2, random_state=42
 )
 
-# create model
-model = RandomForestRegressor(n_estimators=100, random_state=42)
+train_df = df[df["engine_id"].isin(train_engines)]
+test_df = df[df["engine_id"].isin(test_engines)]
 
-# train model
-model.fit(X_train, y_train)
+# -------------------------------
+# 5. FEATURES & TARGET
+# -------------------------------
+X_train = train_df.drop(["RUL", "engine_id", "cycle", "cycle_max"], axis=1)
+y_train = train_df["RUL"]
 
-# predictions
-predictions = model.predict(X_test)
+X_test = test_df.drop(["RUL", "engine_id", "cycle", "cycle_max"], axis=1)
+y_test = test_df["RUL"]
 
-# evaluate
-mae = mean_absolute_error(y_test, predictions)
-
-print("Mean Absolute Error:", mae)
-
-# feature importance
-import pandas as pd
-
-importance = model.feature_importances_
-
-feature_importance_df = pd.DataFrame({
-    "Feature": X.columns,
-    "Importance": importance
-}).sort_values(by="Importance", ascending=False)
-
-print(feature_importance_df)
-'''
-#display of important characters chart
-import matplotlib.pyplot as plt
-
-feature_importance_df.head(10).plot(
-    x="Feature",
-    y="Importance",
-    kind="bar"
-)
-
-plt.title("Top 10 Important Sensors")
-plt.show()'''
-
-#Normalizing features
+# -------------------------------
+# 6. SCALE DATA (PROPER WAY)
+# -------------------------------
 from sklearn.preprocessing import StandardScaler
 
 scaler = StandardScaler()
 
-X_scaled = scaler.fit_transform(X)
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X_scaled, y, test_size=0.2, random_state=42
-)
-
-#XGBoost model
+# -------------------------------
+# 7. TRAIN MODEL (XGBOOST)
+# -------------------------------
 from xgboost import XGBRegressor
 
 model = XGBRegressor(
-    n_estimators=300,
-    learning_rate=0.05,
-    max_depth=5,
+    n_estimators=500,
+    learning_rate=0.03,
+    max_depth=6,
+    subsample=0.8,
+    colsample_bytree=0.8,
     random_state=42
 )
 
 model.fit(X_train, y_train)
 
+# -------------------------------
+# 8. PREDICT & EVALUATE
+# -------------------------------
+from sklearn.metrics import mean_absolute_error
+
 predictions = model.predict(X_test)
 
-from sklearn.metrics import mean_absolute_error
 mae = mean_absolute_error(y_test, predictions)
 
-print("Improved MAE:", mae)
+print("Final MAE:", mae)
+
+# -------------------------------
+# 9. FEATURE IMPORTANCE
+# -------------------------------
+importance = model.feature_importances_
+
+feature_names = train_df.drop(
+    ["RUL", "engine_id", "cycle", "cycle_max"], axis=1
+).columns
+
+importance_df = pd.DataFrame({
+    "Feature": feature_names,
+    "Importance": importance
+}).sort_values(by="Importance", ascending=False)
+
+print("\nTop Features:\n")
+print(importance_df.head(10))
