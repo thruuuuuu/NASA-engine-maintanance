@@ -86,7 +86,7 @@ predictions = model.predict(X_test)
 
 mae = mean_absolute_error(y_test, predictions)
 
-print("Final MAE:", mae)
+print("\nFinal MAE:", mae)
 
 # -------------------------------
 # 9. FEATURE IMPORTANCE
